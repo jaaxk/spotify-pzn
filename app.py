@@ -37,6 +37,8 @@ def recent_tracks():
     
     sp = spotipy.Spotify(auth=token_info['access_token'])
     results = sp.current_user_recently_played(limit=10)
+    print('RESULTS:')
+    print(results)
     
     tracks = [f"{item['track']['name']} by {item['track']['artists'][0]['name']}" for item in results['items']]
     return "<br>".join(tracks)
