@@ -1,7 +1,52 @@
-package.json
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+model/mert_venv/
+
+# Node
+node_modules/
 package-lock.json
+package.json
+
+# Environment variables
 .env
-node_modules
-venv
-model/mert_venv
-spotify_previews/*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Cache directories
+.cache/
+.cache/*
+app/.cache/
+.cache/huggingface/
+app/.cache/huggingface/
+
+# Project specific
+spotify_previews/
+app/embed_lib_pipe/spotify/data/
+app/embed_lib_pipe/models/embeddings/

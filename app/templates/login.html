@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Library Encoder</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1>Spotify Library Encoder</h1>
+        {% if error %}
+            <div class="error-message">
+                Error: {{ error }}
+            </div>
+        {% endif %}
+        <a href="{{ auth_url }}" class="spotify-btn">Login with Spotify</a>
+        
+        <div class="debug-info" style="margin-top: 20px; font-size: 12px; color: #666;">
+            <p>Debug Info:</p>
+            <p>Auth URL: <span id="auth-url">{{ auth_url }}</span></p>
+            <p>Redirect URI: <span id="redirect-uri">{{ redirect_uri }}</span></p>
+        </div>
+    </div>
+    <script>
+        console.log('Login page loaded');
+        console.log('Auth URL:', '{{ auth_url }}');
+        console.log('Window location:', window.location.href);
+        
+        // Debug: Log URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.forEach((value, key) => {
+            console.log(`URL Param: ${key} = ${value}`);
+        });
+        
+        // Check for console errors
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.log('Error:', message, 'at', source, 'line', lineno);
+            return false;
+        };
+        
+        // Add click handler to log when the button is clicked
+        document.querySelector('.spotify-btn').addEventListener('click', function(e) {
+            console.log('Login button clicked, redirecting to:', this.href);
+        });
+    </script>
+</body>
+</html>

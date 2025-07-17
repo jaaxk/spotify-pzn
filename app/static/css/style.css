@@ -1,0 +1,70 @@
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.error-message {
+    background-color: #ff4d4d;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin: 15px 0;
+    text-align: center;
+    font-size: 14px;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.login-container {
+    text-align: center;
+    background-color: #282828;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    max-width: 500px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.login-container {
+    text-align: center;
+    background-color: #282828;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+h1 {
+    color: #1DB954;
+    margin-bottom: 30px;
+}
+
+.spotify-btn {
+    background-color: #1DB954;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 500px;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.spotify-btn:hover {
+    background-color: #1ed760;
+    transform: scale(1.05);
+}

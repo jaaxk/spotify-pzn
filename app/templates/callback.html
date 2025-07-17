@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Success - Spotify Library Encoder</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .container {
+            text-align: center;
+            background-color: #282828;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #1DB954;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 500px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+        .btn:disabled {
+            background-color: #535353;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: #1ed760;
+            transform: scale(1.05);
+        }
+        .loading {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #404040;
+            border-radius: 20px;
+            margin: 20px 0;
+            height: 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #1DB954;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .status {
+            margin: 10px 0;
+            color: #b3b3b3;
+            min-height: 24px;
+        }
+        .error {
+            color: #f15e6c;
+            margin: 15px 0;
+            display: none;
+        }
+        .success {
+            color: #1DB954;
+            margin: 15px 0;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #1DB954;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Successfully Connected to Spotify!</h1>
+        <p>Click the button below to start encoding your library.</p>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="status" id="status">Preparing to process your library...</div>
+        </div>
+        
+        <button id="encodeBtn" class="btn">Encode My Library</button>
+        
+        <div id="error" class="error">
+            An error occurred. Please try again.
+        </div>
+        
+        <div id="success" class="success">
+            Your library has been successfully processed!
+            <div id="resultInfo" style="margin-top: 10px; font-size: 0.9em;"></div>
+        </div>
+    </div>
+
+    <script>
+        let taskId = null;
+        let pollInterval = null;
+        
+        // Update UI elements
+        const btn = document.getElementById('encodeBtn');
+        const loading = document.getElementById('loading');
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('status');
+        const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
+        const resultInfo = document.getElementById('resultInfo');
+        
+        // Hide loading by default
+        loading.style.display = 'none';
+        
+        // Handle the encode button click
+        btn.addEventListener('click', startEncoding);
+        
+        function startEncoding() {
+            // Reset UI
+            btn.disabled = true;
+            loading.style.display = 'flex';
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            progressBar.style.width = '0%';
+            statusText.textContent = 'Starting library processing...';
+            
+            // Start the encoding process
+            fetch('/encode-library', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.task_id) {
+                    taskId = data.task_id;
+                    // Start polling for task status
+                    pollTaskStatus();
+                } else {
+                    throw new Error('No task ID received');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError(error.message);
+            });
+        }
+        
+        function pollTaskStatus() {
+            if (!taskId) return;
+            
+            // Clear any existing interval
+            if (pollInterval) clearInterval(pollInterval);
+            
+            // Poll every 2 seconds
+            pollInterval = setInterval(() => {
+                fetch(`/api/task/status/${taskId}`)
+                    .then(response => response.json())
+                    .then(updateTaskStatus)
+                    .catch(error => {
+                        console.error('Error polling task status:', error);
+                        showError('Error checking task status');
+                    });
+            }, 2000);
+        }
+        
+        function updateTaskStatus(data) {
+            // Update progress bar
+            const progress = data.progress || 0;
+            progressBar.style.width = `${progress}%`;
+            
+            // Update status text
+            if (data.status) {
+                statusText.textContent = data.status;
+            }
+            
+            // Handle task completion or failure
+            if (data.state === 'SUCCESS') {
+                clearInterval(pollInterval);
+                showSuccess(data.result);
+            } else if (data.state === 'FAILURE') {
+                clearInterval(pollInterval);
+                showError(data.status || 'Task failed');
+            }
+        }
+        
+        function showError(message) {
+            clearInterval(pollInterval);
+            loading.style.display = 'none';
+            errorDiv.textContent = `Error: ${message}`;
+            errorDiv.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Try Again';
+            btn.onclick = startEncoding;
+        }
+        
+        function showSuccess(result) {
+            loading.style.display = 'none';
+            successDiv.style.display = 'block';
+            
+            if (result) {
+                resultInfo.innerHTML = `
+                    <div>Tracks processed: ${result.tracks_processed || 0}</div>
+                    <div>Embeddings generated: ${result.embeddings_generated || 0}</div>
+                `;
+            }
+            
+            // Reset button for new encoding
+            btn.disabled = false;
+            btn.textContent = 'Encode Again';
+            btn.onclick = startEncoding;
+        }
+    </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const encodeBtn = document.getElementById('encodeBtn');
+        if (encodeBtn) {
+            encodeBtn.addEventListener('click', startEncoding);
+        }
+    });
+
+    function startEncoding() {
+        const encodeBtn = document.getElementById('encodeBtn');
+        const loading = document.getElementById('loading');
+        const status = document.getElementById('status');
+        const progressBar = document.getElementById('progressBar');
+        
+        // Show loading state
+        encodeBtn.disabled = true;
+        loading.style.display = 'flex';
+        status.textContent = 'Starting library processing...';
+        
+        // Start the encoding process
+        fetch('/api/encode-library', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'started') {
+                // Start polling for status updates
+                pollTaskStatus(data.task_id);
+            } else {
+                throw new Error('Failed to start encoding');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError(error.message);
+            encodeBtn.disabled = false;
+            loading.style.display = 'none';
+        });
+    }
+
+    function pollTaskStatus(taskId) {
+        const statusElement = document.getElementById('status');
+        const progressBar = document.getElementById('progressBar');
+        
+        const checkStatus = () => {
+            fetch(`/api/task-status/${taskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateTaskStatus(data);
+                    
+                    // Continue polling if not completed or failed
+                    if (data.status === 'PROGRESS' || data.status === 'PENDING') {
+                        setTimeout(checkStatus, 1000);
+                    } else if (data.status === 'SUCCESS') {
+                        showSuccess(data.result);
+                    } else if (data.status === 'FAILURE') {
+                        showError(data.message || 'Task failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking status:', error);
+                    showError('Error checking task status');
+                });
+        };
+        
+        // Start polling
+        checkStatus();
+    }
+
+    function updateTaskStatus(data) {
+        const statusElement = document.getElementById('status');
+        const progressBar = document.getElementById('progressBar');
+        
+        // Update status text
+        if (data.status === 'PROGRESS') {
+            statusElement.textContent = data.message || 'Processing...';
+            if (data.progress) {
+                progressBar.style.width = `${data.progress}%`;
+            }
+        } else if (data.status === 'SUCCESS') {
+            statusElement.textContent = 'Processing complete!';
+            progressBar.style.width = '100%';
+        } else if (data.status === 'FAILURE') {
+            statusElement.textContent = 'Processing failed';
+        }
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById('error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    }
+
+    function showSuccess(result) {
+        const successDiv = document.getElementById('success');
+        const resultInfo = document.getElementById('resultInfo');
+        if (successDiv && resultInfo) {
+            successDiv.style.display = 'block';
+            if (result) {
+                resultInfo.textContent = `Processed ${result.processed || 0} tracks`;
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

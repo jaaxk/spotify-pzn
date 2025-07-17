@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /gpfs/scratch/jvaska/pzn/venv
+set -gx VIRTUAL_ENV /Users/jackvaska/Desktop/Other/CodingProjects/spotify_pzn/venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

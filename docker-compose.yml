@@ -1,0 +1,56 @@
+services:
+  # We'll keep Redis in case we need it later
+  redis:
+    image: redis:alpine
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # Simple test service
+  web:
+    build: .
+    command: flask run --host=0.0.0.0 --port=5000
+    volumes:
+      - .:/app
+      - ./app/.cache/huggingface:/app/.cache/huggingface
+    ports:
+      - "5001:5000"
+    environment:
+      - FLASK_DEBUG=1
+      - FLASK_APP=run.py
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  celery_worker:
+    build: .
+    command: celery -A app.embed_lib_pipe.tasks:app worker --loglevel=info --concurrency=1
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '2'
+    volumes:
+      - .:/app
+      - ./app/.cache/huggingface:/app/.cache/huggingface
+    env_file:
+      - .env  # Load all environment variables from .env file
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Explicitly pass Spotify credentials (they'll be overridden by env_file if present)
+      - SPOTIPY_CLIENT_ID
+      - SPOTIPY_CLIENT_SECRET
+    depends_on:
+      - redis
+      - web
+
+volumes:
+  redis_data:

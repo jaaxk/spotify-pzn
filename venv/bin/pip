@@ -1,4 +1,4 @@
-#!/gpfs/scratch/jvaska/pzn/venv/bin/python
+#!/Users/jackvaska/Desktop/Other/CodingProjects/spotify_pzn/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
