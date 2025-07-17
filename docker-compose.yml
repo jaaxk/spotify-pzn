@@ -1,5 +1,6 @@
+
 services:
-  # We'll keep Redis in case we need it later
+  # Redis for Celery
   redis:
     image: redis:alpine
     deploy:
@@ -11,8 +12,45 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 3
 
-  # Simple test service
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-spotify_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spotify_password}
+      POSTGRES_DB: ${POSTGRES_DB:-spotify_app}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spotify_user} -d ${POSTGRES_DB:-spotify_app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Web Application
   web:
     build: .
     command: flask run --host=0.0.0.0 --port=5000
@@ -26,31 +64,46 @@ services:
       - FLASK_APP=run.py
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-spotify_user}:${POSTGRES_PASSWORD:-spotify_password}@postgres:5432/${POSTGRES_DB:-spotify_app}
+      - QDRANT_URL=http://qdrant:6333
+      - SPOTIPY_CLIENT_ID=${SPOTIPY_CLIENT_ID}
+      - SPOTIPY_CLIENT_SECRET=${SPOTIPY_CLIENT_SECRET}
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
 
+  # Celery Worker
   celery_worker:
     build: .
     command: celery -A app.embed_lib_pipe.tasks:app worker --loglevel=info --concurrency=1
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 12G
           cpus: '2'
     volumes:
       - .:/app
       - ./app/.cache/huggingface:/app/.cache/huggingface
-    env_file:
-      - .env  # Load all environment variables from .env file
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      # Explicitly pass Spotify credentials (they'll be overridden by env_file if present)
-      - SPOTIPY_CLIENT_ID
-      - SPOTIPY_CLIENT_SECRET
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-spotify_user}:${POSTGRES_PASSWORD:-spotify_password}@postgres:5432/${POSTGRES_DB:-spotify_app}
+      - QDRANT_URL=http://qdrant:6333
+      - SPOTIPY_CLIENT_ID=${SPOTIPY_CLIENT_ID}
+      - SPOTIPY_CLIENT_SECRET=${SPOTIPY_CLIENT_SECRET}
     depends_on:
-      - redis
-      - web
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
 
 volumes:
   redis_data:
+  postgres_data:
+  qdrant_data:

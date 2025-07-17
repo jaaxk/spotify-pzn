@@ -38,6 +38,7 @@ def convert_mp3_to_wav(
         cmd = [
             "ffmpeg",
             "-i", str(input_path),  # Input file
+            "-t", "15",  # Limit to first 15 seconds
             "-ar", str(sample_rate),  # Sample rate
             "-ac", "1",  # Mono audio
             "-y",  # Overwrite output file if it exists

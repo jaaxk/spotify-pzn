@@ -1,7 +1,10 @@
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.14
 aiosignal==1.4.0
+alembic==1.12.1
 amqp==5.3.1
+anyio==4.9.0
+asyncpg==0.28.0
 attrs==25.3.0
 billiard==4.2.1
 blinker==1.9.0
@@ -34,16 +37,19 @@ packaging==25.0
 pandas==2.3.1
 prompt_toolkit==3.0.51
 propcache==0.3.2
+psycopg2-binary==2.9.9
 pyarrow==20.0.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.0
 pytz==2025.2
 PyYAML==6.0.2
+qdrant-client==1.6.9
 redis==6.2.0
 regex==2024.11.6
 requests==2.32.4
 safetensors==0.5.3
 six==1.17.0
+SQLAlchemy>=1.4.0,<2.0.0  # Pinning to 1.4.x for better compatibility
 spotipy==2.23.0
 sympy==1.14.0
 tokenizers==0.15.2
@@ -54,7 +60,7 @@ tqdm==4.67.1
 transformers==4.35.2
 typing_extensions==4.14.1
 tzdata==2025.2
-urllib3==2.5.0
+urllib3>=1.26.14,<2.0.0  # Pinned for qdrant-client compatibility
 vine==5.1.0
 wcwidth==0.2.13
 Werkzeug==3.1.3

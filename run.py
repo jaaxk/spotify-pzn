@@ -11,6 +11,9 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from celery.result import AsyncResult
 
+# Initialize database
+from app.init_db import init as init_database
+
 # Import our auth module
 from app.auth.spotify import get_spotify_oauth, get_spotify_client, is_token_expired, refresh_token_if_needed, get_spotify_auth_url
 from app.embed_lib_pipe.spotify.get_saved_tracks import SpotifyLibraryEncoder
@@ -222,9 +225,19 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"\n=== Starting Flask app on port {port} ===\n")
     print(f"Current working directory: {os.getcwd()}")
-    print(f"Files in current directory: {os.listdir('.')}")
-    print(f"App root path: {app.root_path}")
-    print(f"Template folder: {app.template_folder}")
-    print(f"Static folder: {app.static_folder}")
+    print(f"Template directory: {TEMPLATE_DIR}")
+    print(f"Static directory: {STATIC_DIR}")
+    print(f"Templates exist: {os.path.exists(TEMPLATE_DIR)}")
+    
+    # Load environment variables
+    load_dotenv()
+    
+    # Initialize database
+    try:
+        init_database()
+        print("Database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        raise
     
     app.run(host='0.0.0.0', port=port, debug=True)
